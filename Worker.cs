@@ -1,13 +1,15 @@
+using coinbase_bot.client;
+
 namespace coinbase_bot;
 
 public class Worker : BackgroundService
 {
     private readonly ILogger<Worker> _logger;
-    private readonly IHost _host;
+    private ICoinbaseClient _client;
 
-    public Worker(ILogger<Worker> logger, IHost ihost)
+    public Worker(ILogger<Worker> logger, ICoinbaseClient client)
     {
-        _host = ihost;
+        _client = client;
         _logger = logger;
     }
 
@@ -15,6 +17,8 @@ public class Worker : BackgroundService
     {
         while (!stoppingToken.IsCancellationRequested)
         {
+            var price = await _client.getCurrentPrice("BTC-NOK");
+            _logger.LogInformation(price._amount + "");
             if (_logger.IsEnabled(LogLevel.Information))
             {
                 _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
