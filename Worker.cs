@@ -18,11 +18,7 @@ public class Worker : BackgroundService
         while (!stoppingToken.IsCancellationRequested)
         {
             var price = await _client.getCurrentPrice("BTC-NOK");
-            _logger.LogInformation(price._amount + "");
-            if (_logger.IsEnabled(LogLevel.Information))
-            {
-                _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
-            }
+            _logger.LogInformation(price.Data.Amount + "");
             await Task.Delay(1000, stoppingToken);
         }
     }
