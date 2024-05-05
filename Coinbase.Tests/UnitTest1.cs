@@ -1,3 +1,5 @@
+using Xunit;
+
 namespace Coinbase.Tests;
 
 public class UnitTest1
