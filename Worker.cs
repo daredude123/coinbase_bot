@@ -1,24 +1,19 @@
 using coinbase_bot.client;
+using coinbase_bot.domain;
 
 namespace coinbase_bot;
 
-public class Worker : BackgroundService
+public class Worker(ILogger<Worker> logger, ICoinbaseClient client) : BackgroundService
 {
-    private readonly ILogger<Worker> _logger;
-    private ICoinbaseClient _client;
-
-    public Worker(ILogger<Worker> logger, ICoinbaseClient client)
-    {
-        _client = client;
-        _logger = logger;
-    }
+    private readonly ILogger<Worker> _logger = logger;
+    private readonly ICoinbaseClient _client = client;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            var price = await _client.getCurrentPrice("BTC-NOK");
-            _logger.LogInformation(price.Data.Amount + "");
+            BtcNokPrice price = await _client.getCurrentPrice("BTC-NOK");
+            _logger.LogInformation(message: price.Data.Amount + "");
             await Task.Delay(1000, stoppingToken);
         }
     }
