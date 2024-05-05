@@ -2,5 +2,5 @@ namespace coinbase_bot.domain;
 
 public class BtcNokPrice
 {
-    public DataObject Data  { get; set; }
+    public DataObject? Data { get; set; }
 }
