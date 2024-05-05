@@ -13,7 +13,7 @@ public class Worker(ILogger<Worker> logger, ICoinbaseClient client) : Background
         while (!stoppingToken.IsCancellationRequested)
         {
             BtcNokPrice price = await _client.getCurrentPrice("BTC-NOK");
-            _logger.LogInformation(message: price.Data.Amount + "");
+            _logger.LogInformation(price.Data.Amount + "");
             await Task.Delay(1000, stoppingToken);
         }
     }
