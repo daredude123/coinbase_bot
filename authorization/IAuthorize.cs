@@ -1,8 +1,8 @@
 namespace coinbase_bot.authorization
 {
-    interface IAutherize
+    public interface IAuthorize
     {
+        public string GenerateJWT();
 
-h
     }
 }
