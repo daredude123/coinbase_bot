@@ -1,11 +1,13 @@
+using coinbase_bot.authorization;
 using coinbase_bot.domain;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace coinbase_bot.client
 {
-    public class CoinbaseClient(ILogger<CoinbaseClient> logger) : ICoinbaseClient
+    public class CoinbaseClient(ILogger<CoinbaseClient> logger, IAuthorize authorization) : ICoinbaseClient
     {
+        IAuthorize _authorize = authorization;
         private readonly ILogger<CoinbaseClient> _logger = logger;
         private static readonly HttpClient sharedClient =
             new() { BaseAddress = new Uri("https://api.coinbase.com") };
@@ -30,6 +32,12 @@ namespace coinbase_bot.client
             BtcNokPrice obj = new();
             JObject ret = JObject.Parse(json);
             return obj;
+        }
+
+
+        private string getJWT()
+        {
+
         }
     }
 }
