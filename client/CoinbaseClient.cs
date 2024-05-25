@@ -5,9 +5,9 @@ using Newtonsoft.Json.Linq;
 
 namespace coinbase_bot.client
 {
-    public class CoinbaseClient(ILogger<CoinbaseClient> logger, IAuthorize authorization) : ICoinbaseClient
+    public class CoinbaseClient(ILogger<CoinbaseClient> logger, IAuthorize authorize) : ICoinbaseClient
     {
-        IAuthorize _authorize = authorization;
+        IAuthorize _authorize = authorize;
         private readonly ILogger<CoinbaseClient> _logger = logger;
         private static readonly HttpClient sharedClient =
             new() { BaseAddress = new Uri("https://api.coinbase.com") };
@@ -17,6 +17,7 @@ namespace coinbase_bot.client
         {
             string json = await CallCoinbase("/v2/prices/BTC-NOK/buy", HttpMethod.Get);
             _logger.LogInformation("response from coinbase {}", json);
+            _logger.LogInformation("JWT : " + getJWT() );
 
             return JsonConvert.DeserializeObject<BtcNokPrice>(json);
         }
@@ -37,7 +38,7 @@ namespace coinbase_bot.client
 
         private string getJWT()
         {
-
+            return _authorize.MakeJwt();
         }
     }
 }
