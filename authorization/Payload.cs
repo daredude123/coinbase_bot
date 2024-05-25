@@ -2,5 +2,5 @@ namespace coinbase_bot.authorization;
 
 public class Payload
 {
-    public Dictionary<string, string>? Claims { get; set; }
+    public Dictionary<string, object>? Claims { get; set; }
 }

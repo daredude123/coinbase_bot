@@ -13,7 +13,7 @@ public class Authorize : IAuthorize
     public string MakeJwt(Header header, Payload payload, string secretKey)
     {
         string headerJson = SerializeObject(header);
-        string payloadJson = SerializeObject(payload.Claims);
+        string payloadJson = SerializeObject(obj: payload.Claims);
 
         string base64Header = Base64UrlEncode(headerJson);
         string base64Payload = Base64UrlEncode(payloadJson);
@@ -22,7 +22,7 @@ public class Authorize : IAuthorize
         return $"{base64Header}.{base64Payload}.{signature}";
     }
 
-    static DefaultContractResolver contractResolver = new DefaultContractResolver
+    private static readonly DefaultContractResolver contractResolver = new()
     {
         NamingStrategy = new CamelCaseNamingStrategy()
     };
@@ -41,14 +41,14 @@ public class Authorize : IAuthorize
 
     public static string Base64UrlEncode(string param)
     {
-        var bytes = Encoding.UTF8.GetBytes(param);
+        byte[] bytes = Encoding.UTF8.GetBytes(param);
         return Base64UrlEncode(bytes);
     }
 
     public static string Base64UrlEncode(byte[] bytes)
     {
-        var base64 = System.Convert.ToBase64String(bytes);
-        var base64Url = base64.TrimEnd('=').Replace('+', '-').Replace('/', '-');
+        string base64 = Convert.ToBase64String(bytes);
+        string base64Url = base64.TrimEnd('=').Replace('+', '-').Replace('/', '-');
         return base64Url;
     }
 
@@ -58,9 +58,9 @@ public class Authorize : IAuthorize
         string secretKey
     )
     {
-        var cipherText = $"{base64Header}.{base64Payload}";
-        HMACSHA256 hmac = new HMACSHA256(Encoding.UTF8.GetBytes(secretKey));
-        var hashResult = hmac.ComputeHash(Encoding.UTF8.GetBytes(cipherText));
+        string cipherText = $"{base64Header}.{base64Payload}";
+        HMACSHA256 hmac = new(Encoding.UTF8.GetBytes(secretKey));
+        byte[] hashResult = hmac.ComputeHash(Encoding.UTF8.GetBytes(cipherText));
         return Base64UrlEncode(hashResult);
     }
 }
