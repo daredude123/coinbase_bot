@@ -8,9 +8,6 @@ namespace coinbase_bot.client
     public class CoinbaseClient(ILogger<CoinbaseClient> logger, IAuthorize authorize)
         : ICoinbaseClient
     {
-        string coinbaseApi = "https://api.coinbase.com";
-        IAuthorize _authorize = authorize;
-        private string OrgName;
 
         private readonly ILogger<CoinbaseClient> _logger = logger;
         private static readonly HttpClient sharedClient =
@@ -19,9 +16,9 @@ namespace coinbase_bot.client
         //Get current price
         public async Task<BtcNokPrice> getCurrentPrice(string currencyPair)
         {
-            string uri = coinbaseApi + "/api/v3/brokerage/accounts";
             string json = await CallCoinbase("/v2/prices/BTC-NOK/buy", HttpMethod.Get);
             _logger.LogInformation("response from coinbase {}", json);
+            Json2BtcNokPrice(json);
 
             return JsonConvert.DeserializeObject<BtcNokPrice>(json);
         }
@@ -36,32 +33,11 @@ namespace coinbase_bot.client
         {
             BtcNokPrice obj = new();
             JObject ret = JObject.Parse(json);
+            Console.WriteLine(ret.GetValue("amount"));
+            BtcNokPrice btcNokPrice = JsonConvert.DeserializeObject<BtcNokPrice>(json);
+            Console.WriteLine("TEEEST");
+            Console.WriteLine(btcNokPrice.Data.Amount);
             return obj;
-        }
-
-        private string GetJWT(HttpMethod method, string uri)
-        {
-            TimeSpan t = DateTime.UtcNow - new DateTime(1970, 1, 1);
-            int secondsSinceEpoch = (int)t.TotalSeconds;
-
-            Header header = new Header
-            {
-                Alg = "ES256",
-                Typ = "JWT",
-                Nonce = secondsSinceEpoch.ToString(),
-                Kid = OrgName
-            };
-
-            var claims = new Dictionary<string, object>();
-            claims.Add("iss", "cdp");
-            claims.Add("nbf", secondsSinceEpoch.ToString());
-            claims.Add("exp", secondsSinceEpoch + 120);
-            claims.Add("sub", OrgName);
-            claims.Add("uri", uri);
-
-            Payload payload = new Payload { Claims = claims };
-
-            return _authorize.MakeJwt(header, payload, "quack");
         }
     }
 }
