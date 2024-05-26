@@ -1,11 +1,10 @@
-using coinbase_bot.authorization;
 using coinbase_bot.domain;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace coinbase_bot.client
 {
-    public class CoinbaseClient(ILogger<CoinbaseClient> logger, IAuthorize authorize)
+    public class CoinbaseClient(ILogger<CoinbaseClient> logger)
         : ICoinbaseClient
     {
 
