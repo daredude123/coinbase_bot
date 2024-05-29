@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using coinbase_bot.authorization;
 
 namespace coinbase_bot.client;
@@ -20,27 +21,37 @@ public class PrivateCoinbaseClient(IAuthorize authorize, ILogger<PrivateCoinbase
 
     private async Task<string> CallCoinbase(string url, HttpMethod method)
     {
-        string jwt = getJWT(url, method);
+        string jwt = GetJWT(url, method);
         HttpResponseMessage response = await sharedClient.GetAsync(url);
+        sharedClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+            "Bearer",
+            jwt
+        );
         return await response.Content.ReadAsStringAsync();
     }
 
-    private string getJWT(string url, HttpMethod method)
+    private string GetJWT(string url, HttpMethod method)
     {
-        Header header = new Header();
-        header.Alg = "ES256";
-        header.Typ = "JWT";
-        header.Kid = OrgName;
-        header.Nonce = getEpoch();
+        Header header =
+            new()
+            {
+                Alg = "ES256",
+                Typ = "JWT",
+                Kid = OrgName,
+                Nonce = getEpoch()
+            };
 
-        string uri  = method.Method + " " + url;
+        string uri = method.Method + " " + url;
 
-        Dictionary<string, object> claims = new Dictionary<string, object>();
-        claims.Add("iss", "cdp");
-        claims.Add("nbf", getEpoch());
-        claims.Add("exp", getEpoch(120));
-        claims.Add("sub", OrgName);
-        claims.Add("uri", uri);
+        Dictionary<string, object> claims =
+            new()
+            {
+                { "iss", "cdp" },
+                { "nbf", getEpoch() },
+                { "exp", getEpoch(120) },
+                { "sub", OrgName },
+                { "uri", uri }
+            };
 
         Payload payload = new Payload();
         payload.Claims = claims;
