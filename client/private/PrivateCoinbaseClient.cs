@@ -7,16 +7,16 @@ public class PrivateCoinbaseClient(IAuthorize authorize, ILogger<PrivateCoinbase
     : IPrivateCoinbaseClient
 {
     private readonly IAuthorize _authorize = authorize;
-    private readonly string OrgName;
+    private readonly string OrgName = "algotraderkey";
     private readonly ILogger<PrivateCoinbaseClient> _logger = logger;
 
     private static readonly HttpClient sharedClient =
         new() { BaseAddress = new Uri("https://api.coinbase.com") };
     private string key;
 
-    public string ListAccounts()
+    public async Task<string> ListProductsAsync()
     {
-        return "";
+        return await CallCoinbase("api/v3/brokerage/products", HttpMethod.Get);
     }
 
     private async Task<string> CallCoinbase(string url, HttpMethod method)
@@ -55,7 +55,7 @@ public class PrivateCoinbaseClient(IAuthorize authorize, ILogger<PrivateCoinbase
 
         Payload payload = new Payload();
         payload.Claims = claims;
-        string jwt = _authorize.MakeJwt(header, payload, secretKey: key);
+        string jwt = _authorize.MakeJwt(header, payload);
 
         return jwt;
     }
@@ -66,5 +66,15 @@ public class PrivateCoinbaseClient(IAuthorize authorize, ILogger<PrivateCoinbase
         int secondsSinceEpoch = (int)t.TotalSeconds;
         secondsSinceEpoch += v;
         return secondsSinceEpoch.ToString();
+    }
+
+    public string CreateOrder()
+    {
+        return "";
+    }
+
+    string IPrivateCoinbaseClient.ListAccountsAsync()
+    {
+        throw new NotImplementedException();
     }
 }

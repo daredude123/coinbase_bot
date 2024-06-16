@@ -7,10 +7,10 @@ namespace coinbase_bot.authorization;
 
 public class Authorize : IAuthorize
 {
-    private readonly string keyName = "";
-    private readonly string keySecret = "";
+    private readonly string keyName = "algotraderkey";
+    private readonly string keySecret = "TFeY1BHxPH5rcin5";
 
-    public string MakeJwt(Header header, Payload payload, string secretKey)
+    public string MakeJwt(Header header, Payload payload)
     {
         string headerJson = SerializeObject(header);
         string payloadJson = SerializeObject(obj: payload.Claims);
@@ -18,7 +18,7 @@ public class Authorize : IAuthorize
         string base64Header = Base64UrlEncode(headerJson);
         string base64Payload = Base64UrlEncode(payloadJson);
 
-        string signature = GenerateSignature(base64Header, base64Payload, secretKey);
+        string signature = GenerateSignature(base64Header, base64Payload, keySecret);
         return $"{base64Header}.{base64Payload}.{signature}";
     }
 
