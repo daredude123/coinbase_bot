@@ -1,4 +1,3 @@
-using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using coinbase_bot.authorization;
 using Jose;
@@ -10,9 +9,7 @@ public class PrivateCoinbaseClient(IAuthorize authorize, ILogger<PrivateCoinbase
 {
     static Random random = new Random();
     private readonly IAuthorize _authorize = authorize;
-    private readonly string OrgName = "algotraderkey";
     private readonly ILogger<PrivateCoinbaseClient> _logger = logger;
-
     private static readonly HttpClient sharedClient =
         new() { BaseAddress = new Uri("https://api.coinbase.com") };
     private string key;
@@ -22,23 +19,20 @@ public class PrivateCoinbaseClient(IAuthorize authorize, ILogger<PrivateCoinbase
         return await CallCoinbase("api/v3/brokerage/products", HttpMethod.Get);
     }
 
+    public async Task<string>
+
     private async Task<string> CallCoinbase(string url, HttpMethod method)
     {
-        string key = parseKey(cbPrivateKey);
+        string key = parseKey(cbprivateKey);
         string endpoint = "api.coinbase.com/api/v3/brokerage/accounts";
-        string token = generateToken(name, key, $"GET {endpoint}");
+        string token = generateToken(OrgName, key, $"GET {endpoint}");
 
         Console.WriteLine("Call API...");
         Console.WriteLine(CallApiGET($"https://{endpoint}", token));
+        var res = CallApiGET($"https://{endpoint}", token);
 
-        HttpResponseMessage response = await sharedClient.GetAsync(url);
-        sharedClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
-            "Bearer",
-            jwt
-        );
-
-        _logger.LogInformation(response.ToString());
-        return await response.Content.ReadAsStringAsync();
+        _logger.LogInformation(res.ToString());
+        return res;
     }
 
     private string GetJWT(string url, HttpMethod method)
