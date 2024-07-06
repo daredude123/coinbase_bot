@@ -1,19 +1,26 @@
+using coinbase_bot.backtest;
 using coinbase_bot.client;
 using coinbase_bot.domain;
 
 namespace coinbase_bot;
 
-public class Worker(ILogger<Worker> logger, ICoinbaseClient client, IPrivateCoinbaseClient privateCoinbaseClient) : BackgroundService
+public class Worker(ILogger<Worker> logger, ICoinbaseClient client, IPrivateCoinbaseClient privateCoinbaseClient, IBackTest backTest) : BackgroundService
 {
     private readonly ILogger<Worker> _logger = logger;
     private readonly ICoinbaseClient _client = client;
     private readonly IPrivateCoinbaseClient _privateClient = privateCoinbaseClient;
+    private readonly bool backtestFlag = true;
+    private readonly IBackTest _backtest = backTest;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        if (backtestFlag)
+        {
+            backTest.RunBackTest();
+        }
         while (!stoppingToken.IsCancellationRequested)
         {
-            BtcNokPrice price = await _client.getCurrentPrice("BTC-NOK");
+            BtcNokPrice price = await _client.GetCurrentPrice("BTC-NOK");
             _logger.LogInformation(price.Data.Amount + "");
 
             var products = await _privateClient.ListProductsAsync();

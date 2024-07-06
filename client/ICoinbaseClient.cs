@@ -4,5 +4,6 @@ namespace coinbase_bot.client;
 
 public interface ICoinbaseClient
 {
-    Task<BtcNokPrice> getCurrentPrice(string currencyPair);
+    Task<BtcNokPrice> GetCurrentPrice(string currencyPair);
+    Task<List<BtcNokPrice>> GetHistoricPrices(string pricePair);
 }

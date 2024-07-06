@@ -7,19 +7,19 @@ namespace coinbase_bot.client;
 public class PrivateCoinbaseClient(IAuthorize authorize, ILogger<PrivateCoinbaseClient> logger)
     : IPrivateCoinbaseClient
 {
-    static Random random = new Random();
+    private static readonly Random random = new();
     private readonly IAuthorize _authorize = authorize;
     private readonly ILogger<PrivateCoinbaseClient> _logger = logger;
     private static readonly HttpClient sharedClient =
         new() { BaseAddress = new Uri("https://api.coinbase.com") };
-    private string key;
+    private readonly string key;
+    private readonly string cbprivateKey;
+    private readonly string OrgName;
 
     public async Task<string> ListProductsAsync()
     {
         return await CallCoinbase("api/v3/brokerage/products", HttpMethod.Get);
     }
-
-    public async Task<string>
 
     private async Task<string> CallCoinbase(string url, HttpMethod method)
     {
@@ -27,7 +27,6 @@ public class PrivateCoinbaseClient(IAuthorize authorize, ILogger<PrivateCoinbase
         string endpoint = "api.coinbase.com/api/v3/brokerage/accounts";
         string token = generateToken(OrgName, key, $"GET {endpoint}");
 
-        Console.WriteLine("Call API...");
         Console.WriteLine(CallApiGET($"https://{endpoint}", token));
         var res = CallApiGET($"https://{endpoint}", token);
 

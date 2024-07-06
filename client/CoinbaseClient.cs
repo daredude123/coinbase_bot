@@ -13,7 +13,7 @@ namespace coinbase_bot.client
             new() { BaseAddress = new Uri("https://api.coinbase.com") };
 
         //Get current price
-        public async Task<BtcNokPrice> getCurrentPrice(string currencyPair)
+        public async Task<BtcNokPrice> GetCurrentPrice(string currencyPair)
         {
             string json = await CallCoinbase("/v2/prices/BTC-NOK/buy", HttpMethod.Get);
             _logger.LogInformation("response from coinbase {}", json);
@@ -32,11 +32,16 @@ namespace coinbase_bot.client
         {
             BtcNokPrice obj = new();
             JObject ret = JObject.Parse(json);
-            Console.WriteLine(ret.GetValue("amount"));
+
             BtcNokPrice btcNokPrice = JsonConvert.DeserializeObject<BtcNokPrice>(json);
-            Console.WriteLine("TEEEST");
             Console.WriteLine(btcNokPrice.Data.Amount);
+
             return obj;
+        }
+
+        public Task<List<BtcNokPrice>> GetHistoricPrices(string pricePair)
+        {
+            throw new NotImplementedException();
         }
     }
 }
