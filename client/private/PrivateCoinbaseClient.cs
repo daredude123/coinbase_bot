@@ -9,12 +9,11 @@ public class PrivateCoinbaseClient(IAuthorize authorize, ILogger<PrivateCoinbase
 {
     private static readonly Random random = new();
     private readonly IAuthorize _authorize = authorize;
+    private readonly string OrgName;
     private readonly ILogger<PrivateCoinbaseClient> _logger = logger;
+    private readonly string cbprivateKey;
     private static readonly HttpClient sharedClient =
         new() { BaseAddress = new Uri("https://api.coinbase.com") };
-    private readonly string key;
-    private readonly string cbprivateKey;
-    private readonly string OrgName;
 
     public async Task<string> ListProductsAsync()
     {
