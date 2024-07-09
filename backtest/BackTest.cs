@@ -1,5 +1,8 @@
 using coinbase_bot.client;
+using coinbase_bot.domain;
+using Newtonsoft.Json.Linq;
 using SimpleBacktestLib;
+using Skender.Stock.Indicators;
 
 namespace coinbase_bot.backtest;
 
@@ -9,12 +12,13 @@ public class BackTest(ICoinbaseClient publicClient) : IBackTest
 
     public void RunBackTest()
     {
-        var candleData = new List<BacktestCandle>() { };
+        var candleData = getCandleData();
 
         BacktestBuilder builder = BacktestBuilder
             .CreateBuilder(candleData)
             .OnTick(state =>
             {
+
                 // your strategy code goes here
             })
             .OnLogEntry(
@@ -26,9 +30,25 @@ public class BackTest(ICoinbaseClient publicClient) : IBackTest
         builder.Run();
     }
 
-    private List<BacktestCandle> getCandleData()
+    private async List<BacktestCandle> getCandleData()
     {
-        var priceList = _publicClient.GetHistoricPrices("BTC-NOK");
+        var priceList = await _publicClient.GetHistoricPrices("BTC-NOK");
+        JObject jsonObject = JObject.Parse(priceList);
+        var quotes = prices2Quotes(priceList);
         return [];
+    }
+
+    private object prices2Quotes(List<BtcNokPrice> priceList)
+    {
+        List<Quote> qList = new List<Quote>();
+        foreach (var price in priceList)
+        {
+            qList.Add(price2Quote(price));
+        }
+    }
+
+    private Quote price2Quote(Candle price)
+    {
+        Candlesticks
     }
 }
