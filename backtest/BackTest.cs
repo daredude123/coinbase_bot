@@ -49,7 +49,14 @@ public class BackTest(ICoinbaseClient publicClient) : IBackTest
 
     private Quote price2Quote(Candle candle)
     {
-        Quote quote = new Quote();
-        quote.Low = candle.;
+        Quote quote = new Quote
+        {
+            Low = candle.Low,
+            High = candle.High,
+            Volume = candle.Volume,
+            Open = candle.Open,
+            Date = candle.Start,
+
+        };
     }
 }

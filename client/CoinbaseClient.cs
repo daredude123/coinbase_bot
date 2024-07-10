@@ -39,9 +39,10 @@ namespace coinbase_bot.client
             return obj;
         }
 
-        public Task<List<BtcNokPrice>> GetHistoricPrices(string pricePair)
+        public async Task<HistoricalCandles> GetHistoricPrices(string pricePair)
         {
-            throw new NotImplementedException();
+            string json = await CallCoinbase($"api/v3/brokerage/market/products/{pricePair}/candles", HttpMethod.Get);
+            return JsonConvert.DeserializeObject<HistoricalCandles>(json);
         }
     }
 }

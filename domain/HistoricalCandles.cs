@@ -1,6 +1,6 @@
 namespace coinbase_bot.domain;
 
-class HistoricalCandles
+public class HistoricalCandles
 {
     List<Candle> candles {get; set;}
 }
