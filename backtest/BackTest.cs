@@ -10,9 +10,9 @@ public class BackTest(ICoinbaseClient publicClient) : IBackTest
 {
     private readonly ICoinbaseClient _publicClient = publicClient;
 
-    public void RunBackTest()
+    public async void RunBackTest()
     {
-        var candleData = getCandleData();
+        var candleData = await getCandleData();
 
         BacktestBuilder builder = BacktestBuilder
             .CreateBuilder(candleData)
@@ -30,25 +30,26 @@ public class BackTest(ICoinbaseClient publicClient) : IBackTest
         builder.Run();
     }
 
-    private async List<BacktestCandle> getCandleData()
+    private async Task<List<BacktestCandle>> getCandleData()
     {
         var priceList = await _publicClient.GetHistoricPrices("BTC-NOK");
-        JObject jsonObject = JObject.Parse(priceList);
-        var quotes = prices2Quotes(priceList);
+        var quotes = Candle2Quote(priceList);
         return [];
     }
 
-    private object prices2Quotes(List<BtcNokPrice> priceList)
+    private List<Quote> Candle2Quote(List<Candle> priceList)
     {
         List<Quote> qList = new List<Quote>();
         foreach (var price in priceList)
         {
             qList.Add(price2Quote(price));
         }
+        return qList;
     }
 
-    private Quote price2Quote(Candle price)
+    private Quote price2Quote(Candle candle)
     {
-        Candlesticks
+        Quote quote = new Quote();
+        quote.Low = candle.;
     }
 }
