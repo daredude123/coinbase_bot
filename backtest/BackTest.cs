@@ -1,6 +1,7 @@
 using coinbase_bot.client;
 using coinbase_bot.domain;
-using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using SimpleBacktestLib;
 using Skender.Stock.Indicators;
 
@@ -12,14 +13,14 @@ public class BackTest(ICoinbaseClient publicClient) : IBackTest
 
     public async void RunBackTest()
     {
-        var candleData = await getCandleData();
+        var candleData = await GetCandleData();
+        var strategyData = Candle2Quote(await GetCandleData());
 
         BacktestBuilder builder = BacktestBuilder
-            .CreateBuilder(candleData)
+            .CreateBuilder(Candle2BackTestData(candleData))
             .OnTick(state =>
             {
-
-                // your strategy code goes here
+                state.Trade.Spot.Buy();
             })
             .OnLogEntry(
                 (logEntry, state) => {
@@ -27,36 +28,66 @@ public class BackTest(ICoinbaseClient publicClient) : IBackTest
                 }
             );
 
-        builder.Run();
+        BacktestResult result = await builder.RunAsync();
+        var resultString = JsonConvert.SerializeObject(
+            result,
+            Formatting.Indented,
+            [new StringEnumConverter()]
+        );
+        Console.WriteLine(resultString);
     }
 
-    private async Task<List<BacktestCandle>> getCandleData()
+    private async Task<HistoricalCandles> GetCandleData()
     {
-        var priceList = await _publicClient.GetHistoricPrices("BTC-NOK");
-        var quotes = Candle2Quote(priceList);
-        return [];
+        return await _publicClient.GetHistoricPrices("BTC-USD");
     }
 
-    private List<Quote> Candle2Quote(List<Candle> priceList)
+    private static List<BacktestCandle> Candle2BackTestData(HistoricalCandles historicalCandles)
     {
-        List<Quote> qList = new List<Quote>();
-        foreach (var price in priceList)
+        List<BacktestCandle> qList = [];
+        historicalCandles.candles.Reverse();
+        foreach (Candle price in historicalCandles.candles)
         {
-            qList.Add(price2Quote(price));
+            BacktestCandle ret = ToBackTestCandles(price);
+            Console.WriteLine(ret.ToString());
+            qList.Add(ret);
+
         }
+
         return qList;
     }
 
-    private Quote price2Quote(Candle candle)
+    private static BacktestCandle ToBackTestCandles(Candle candle)
     {
-        Quote quote = new Quote
+        return new BacktestCandle
         {
             Low = candle.Low,
             High = candle.High,
             Volume = candle.Volume,
             Open = candle.Open,
-            Date = candle.Start,
+            Time = DateTimeOffset.FromUnixTimeSeconds(candle.Start).DateTime
+        };
+    }
 
+    private static List<Quote> Candle2Quote(HistoricalCandles historicalCandles)
+    {
+        List<Quote> qList = [];
+        foreach (Candle price in historicalCandles.candles)
+        {
+            qList.Add(Price2Quote(price));
+        }
+        return qList;
+    }
+
+    private static Quote Price2Quote(Candle candle)
+    {
+        return new Quote
+        {
+            Low = candle.Low,
+            High = candle.High,
+            Volume = candle.Volume,
+            Open = candle.Open,
+            Date = DateTimeOffset.FromUnixTimeSeconds(candle.Start).UtcDateTime
         };
     }
 }

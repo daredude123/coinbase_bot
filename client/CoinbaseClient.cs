@@ -1,13 +1,10 @@
 using coinbase_bot.domain;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace coinbase_bot.client
 {
-    public class CoinbaseClient(ILogger<CoinbaseClient> logger)
-        : ICoinbaseClient
+    public class CoinbaseClient(ILogger<CoinbaseClient> logger) : ICoinbaseClient
     {
-
         private readonly ILogger<CoinbaseClient> _logger = logger;
         private static readonly HttpClient sharedClient =
             new() { BaseAddress = new Uri("https://api.coinbase.com") };
@@ -15,14 +12,11 @@ namespace coinbase_bot.client
         //Get current price
         public async Task<BtcNokPrice> GetCurrentPrice(string currencyPair)
         {
-            string json = await CallCoinbase("/v2/prices/BTC-NOK/buy", HttpMethod.Get);
-            _logger.LogInformation("response from coinbase {}", json);
-            Json2BtcNokPrice(json);
-
+            string json = await CallCoinbase("/v2/prices/BTC-NOK/buy");
             return JsonConvert.DeserializeObject<BtcNokPrice>(json);
         }
 
-        private static async Task<string> CallCoinbase(string url, HttpMethod method)
+        private static async Task<string> CallCoinbase(string url)
         {
             HttpResponseMessage response = await sharedClient.GetAsync(url);
             return await response.Content.ReadAsStringAsync();
@@ -30,18 +24,20 @@ namespace coinbase_bot.client
 
         private static BtcNokPrice Json2BtcNokPrice(string json)
         {
-            BtcNokPrice obj = new();
-            JObject ret = JObject.Parse(json);
-
             BtcNokPrice btcNokPrice = JsonConvert.DeserializeObject<BtcNokPrice>(json);
-            Console.WriteLine(btcNokPrice.Data.Amount);
-
-            return obj;
+            Console.WriteLine(value: btcNokPrice.Data.Amount);
+            return btcNokPrice;
         }
 
         public async Task<HistoricalCandles> GetHistoricPrices(string pricePair)
         {
-            string json = await CallCoinbase($"api/v3/brokerage/market/products/{pricePair}/candles", HttpMethod.Get);
+            //Current date in Unix seconds
+            long end = new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds();
+            long start = new DateTimeOffset(DateTime.Now).AddHours(-20).ToUnixTimeSeconds();
+            string json = await CallCoinbase(
+                $"api/v3/brokerage/market/products/{pricePair}/candles?start={start}&end={end}&granularity=FIVE_MINUTE"
+            );
+
             return JsonConvert.DeserializeObject<HistoricalCandles>(json);
         }
     }

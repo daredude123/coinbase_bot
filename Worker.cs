@@ -4,30 +4,37 @@ using coinbase_bot.domain;
 
 namespace coinbase_bot;
 
-public class Worker(ILogger<Worker> logger, ICoinbaseClient client, IPrivateCoinbaseClient privateCoinbaseClient, IBackTest backTest) : BackgroundService
+public class Worker(
+    ILogger<Worker> logger,
+    ICoinbaseClient client,
+    IPrivateCoinbaseClient privateCoinbaseClient,
+    IBackTest backTest
+) : BackgroundService
 {
     private readonly ILogger<Worker> _logger = logger;
     private readonly ICoinbaseClient _client = client;
     private readonly IPrivateCoinbaseClient _privateClient = privateCoinbaseClient;
     private readonly bool backtestFlag = true;
-    private readonly IBackTest _backtest = backTest;
+    private readonly IBackTest _backTest = backTest;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         if (backtestFlag)
         {
-            backTest.RunBackTest();
+            _backTest.RunBackTest();
         }
-        while (!stoppingToken.IsCancellationRequested)
+        else
         {
-            BtcNokPrice price = await _client.GetCurrentPrice("BTC-NOK");
-            _logger.LogInformation(price.Data.Amount + "");
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                BtcNokPrice price = await _client.GetCurrentPrice("BTC-NOK");
+                _logger.LogInformation(price.Data.Amount + "");
 
-            var products = await _privateClient.ListProductsAsync();
-            _logger.LogInformation(products);
+                var products = await _privateClient.ListProductsAsync();
+                _logger.LogInformation(products.ToString());
 
-
-            await Task.Delay(1000, stoppingToken);
+                await Task.Delay(1000, stoppingToken);
+            }
         }
     }
 }
