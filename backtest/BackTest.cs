@@ -13,17 +13,30 @@ public class BackTest(ICoinbaseClient publicClient) : IBackTest
 
     public async void RunBackTest()
     {
-        var candleData = await GetCandleData();
-        var strategyData = Candle2Quote(await GetCandleData());
+        HistoricalCandles candleData = await GetCandleData();
+
+        List<Quote> strategyData = Candle2Quote(candleData);
+        List<Quote> quotes = [];
 
         BacktestBuilder builder = BacktestBuilder
             .CreateBuilder(Candle2BackTestData(candleData))
-            .OnTick(state =>
+            .OnTick((Action<BacktestState>)(state =>
             {
-                state.Trade.Spot.Buy();
-            })
+
+                Quote quote = BackTestCandle2Quote(state.GetCurrentCandle());
+                quotes.Add(quote);
+                Console.WriteLine($"'{state.GetCurrentCandle().High}' '{state.GetCurrentCandle().Low}' '{state.GetCurrentCandle().Open}' '{state.GetCurrentCandle().Time}' '{state.GetCurrentCandle().Volume}' '{state.GetCurrentCandle().Close}'");
+
+                IEnumerable<SmaResult> sma20 = quotes.GetSma(20);
+                IEnumerable<SmaResult> sma40 = quotes.GetSma(40);
+                foreach (var x in sma20)
+                {
+                    Console.WriteLine(x.Sma);
+                }
+            }))
             .OnLogEntry(
-                (logEntry, state) => {
+                (logEntry, state) =>
+                {
                     // Optionally do something when a log entry is created
                 }
             );
@@ -49,11 +62,8 @@ public class BackTest(ICoinbaseClient publicClient) : IBackTest
         foreach (Candle price in historicalCandles.candles)
         {
             BacktestCandle ret = ToBackTestCandles(price);
-            Console.WriteLine(ret.ToString());
             qList.Add(ret);
-
         }
-
         return qList;
     }
 
@@ -62,6 +72,7 @@ public class BackTest(ICoinbaseClient publicClient) : IBackTest
         return new BacktestCandle
         {
             Low = candle.Low,
+            Close = candle.Close,
             High = candle.High,
             Volume = candle.Volume,
             Open = candle.Open,
@@ -88,6 +99,18 @@ public class BackTest(ICoinbaseClient publicClient) : IBackTest
             Volume = candle.Volume,
             Open = candle.Open,
             Date = DateTimeOffset.FromUnixTimeSeconds(candle.Start).UtcDateTime
+        };
+    }
+    private static Quote BackTestCandle2Quote(BacktestCandle candle)
+    {
+        return new Quote
+        {
+            Close = candle.Close,
+            Low = candle.Low,
+            High = candle.High,
+            Volume = candle.Volume,
+            Open = candle.Open,
+            Date = candle.Time
         };
     }
 }

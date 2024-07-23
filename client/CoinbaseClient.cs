@@ -37,6 +37,7 @@ namespace coinbase_bot.client
             string json = await CallCoinbase(
                 $"api/v3/brokerage/market/products/{pricePair}/candles?start={start}&end={end}&granularity=FIVE_MINUTE"
             );
+            Console.WriteLine(json);
 
             return JsonConvert.DeserializeObject<HistoricalCandles>(json);
         }
