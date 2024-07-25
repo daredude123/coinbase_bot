@@ -21,41 +21,24 @@ public class BackTest(ICoinbaseClient publicClient) : IBackTest
 
         bool position = false;
         decimal feePercentage = 0.6m;
+        List<BacktestCandle> backTestCandleList = [];
 
         BacktestBuilder builder = BacktestBuilder
             .CreateBuilder(Candle2BackTestData(candleData))
             .AddSpotFee(AmountType.Percentage, feePercentage, FeeSource.Base)
             .OnTick(state =>
             {
+                backTestCandleList.Add(state.GetCurrentCandle());
 
                 Quote quote = BackTestCandle2Quote(state.GetCurrentCandle());
                 quotes.Add(quote);
                 Console.WriteLine($"'{state.GetCurrentCandle().High}' '{state.GetCurrentCandle().Low}' '{state.GetCurrentCandle().Open}' '{state.GetCurrentCandle().Time}' '{state.GetCurrentCandle().Volume}' '{state.GetCurrentCandle().Close}'");
 
                 IEnumerable<SmaResult> sma20 = quotes.GetSma(20);
-                quotes.GetBollingerBands(15);
-                quotes.GetVwap();
-                IEnumerable<SmaResult> sma40 = quotes.GetSma(40);
-                SmaResult last20 = new(DateTime.Now);
-                SmaResult last40 = new(DateTime.Now);
-                if (sma20.Any())
-                {
-                    last20 = sma20.Last();
-                }
-                if (sma40.Any())
-                {
-                    last40 = sma40.Last();
-                }
-                if (last20.Sma > last40.Sma && !position)
-                {
-                    position = true;
-                    state.Trade.Spot.Buy(AmountType.Percentage, 10);
-                }
-                else if (last20.Sma < last40.Sma && position)
-                {
-                    position = false;
-                    state.Trade.Spot.Sell(AmountType.Percentage, 100);
-                }
+                IEnumerable<BollingerBandsResult> bollingerB = quotes.GetBollingerBands(15);
+                IEnumerable<VwapResult> vWap = quotes.GetVwap();
+                IEnumerable<RsiResult> rsi = quotes.GetRsi(16);
+
             })
             .OnLogEntry(
                 (logEntry, state) =>
@@ -78,6 +61,8 @@ public class BackTest(ICoinbaseClient publicClient) : IBackTest
 
         return await _publicClient.GetHistoricPrices("BTC-USD");
     }
+
+    private int calculateTrend(List<BacktestCandle> )
 
 
 
