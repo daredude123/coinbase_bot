@@ -1,3 +1,4 @@
+using System.Net;
 using coinbase_bot.domain;
 using Newtonsoft.Json;
 
@@ -19,7 +20,9 @@ namespace coinbase_bot.client
         private static async Task<string> CallCoinbase(string url)
         {
             HttpResponseMessage response = await sharedClient.GetAsync(url);
-            return await response.Content.ReadAsStringAsync();
+            return response.StatusCode != HttpStatusCode.OK
+                ? throw new Exception(await response.Content.ReadAsStringAsync())
+                : await response.Content.ReadAsStringAsync();
         }
 
         private static BtcNokPrice Json2BtcNokPrice(string json)
@@ -37,9 +40,23 @@ namespace coinbase_bot.client
             string json = await CallCoinbase(
                 $"api/v3/brokerage/market/products/{pricePair}/candles?start={start}&end={end}&granularity=FIVE_MINUTE"
             );
-            Console.WriteLine(json);
 
             return JsonConvert.DeserializeObject<HistoricalCandles>(json);
+        }
+
+        public Task<HistoricalCandles> GetHistoricPricesInBatch(string pricePair, DateTime start, DateTime end)
+        {
+
+            if(DateTime.Now.Subtract(start).Days > 20)
+            {
+                //we need to divy up
+
+            }
+            //Current date in Unix seconds
+            long longEnd = new DateTimeOffset(end).ToUnixTimeSeconds();
+            long longStart = new DateTimeOffset(start).ToUnixTimeSeconds();
+
+
         }
     }
 }
