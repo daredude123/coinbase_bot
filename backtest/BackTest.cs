@@ -34,7 +34,6 @@ public class BackTest(ICoinbaseClient publicClient) : IBackTest
                 quotes.Add(quote);
                 Console.WriteLine($"'{state.GetCurrentCandle().High}' '{state.GetCurrentCandle().Low}' '{state.GetCurrentCandle().Open}' '{state.GetCurrentCandle().Time}' '{state.GetCurrentCandle().Volume}' '{state.GetCurrentCandle().Close}'");
 
-                IEnumerable<SmaResult> sma20 = quotes.GetSma(20);
                 IEnumerable<BollingerBandsResult> bollingerB = quotes.GetBollingerBands(15);
                 IEnumerable<VwapResult> vWap = quotes.GetVwap();
                 IEnumerable<RsiResult> rsi = quotes.GetRsi(16);
@@ -62,7 +61,20 @@ public class BackTest(ICoinbaseClient publicClient) : IBackTest
         return await _publicClient.GetHistoricPrices("BTC-USD");
     }
 
-    private int calculateTrend(List<BacktestCandle> )
+    private int calculateTrend(List<BacktestCandle> backtestCandles, List<VwapResult> vwaps)
+    {
+
+       int backCandles = 15;
+        for (int i = 0; i < backtestCandles.Count(); i++)
+        {
+           int upt = 1;
+           int dnt = 1;
+           for (int j = i-backCandles; j < i+1; j++)
+           {
+
+           }
+        }
+    }
 
 
 
