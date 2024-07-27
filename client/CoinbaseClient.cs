@@ -44,17 +44,23 @@ namespace coinbase_bot.client
             return JsonConvert.DeserializeObject<HistoricalCandles>(json);
         }
 
-        public Task<HistoricalCandles> GetHistoricPricesInBatch(string pricePair, DateTime start, DateTime end)
+        public Task<HistoricalCandles> GetHistoricPricesInBatch(string pricePair, int periods)
         {
 
-            if(DateTime.Now.Subtract(start).Days > 20)
+            for (int i = periods; i > 0; i++)
             {
-                //we need to divy up
+                long start = periods * 20;
+                long end = periods * 20 - 20;
 
+                if (periods == 0)
+                {
+
+                }
+
+                //Current date in Unix seconds
+                long longEnd = new DateTimeOffset(end).ToUnixTimeSeconds();
+                long longStart = new DateTimeOffset(start).ToUnixTimeSeconds();
             }
-            //Current date in Unix seconds
-            long longEnd = new DateTimeOffset(end).ToUnixTimeSeconds();
-            long longStart = new DateTimeOffset(start).ToUnixTimeSeconds();
 
 
         }

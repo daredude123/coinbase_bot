@@ -35,9 +35,22 @@ public class BackTest(ICoinbaseClient publicClient) : IBackTest
                 Console.WriteLine($"'{state.GetCurrentCandle().High}' '{state.GetCurrentCandle().Low}' '{state.GetCurrentCandle().Open}' '{state.GetCurrentCandle().Time}' '{state.GetCurrentCandle().Volume}' '{state.GetCurrentCandle().Close}'");
 
                 IEnumerable<BollingerBandsResult> bollingerB = quotes.GetBollingerBands(15);
-                IEnumerable<VwapResult> vWap = quotes.GetVwap();
+                List<VwapResult> vWap = quotes.GetVwap().ToList();
                 IEnumerable<RsiResult> rsi = quotes.GetRsi(16);
 
+                int trend = CalculateTrend(backTestCandleList, vWap);
+                if (trend == 2 &&
+                        rsi.Last().Rsi < 45 &&
+                        (double?)state.GetCurrentCandle().Close >= bollingerB.Last().LowerBand)
+                {
+                    state.Trade.Spot.Buy(AmountType.Percentage, 25);
+                }
+                if (trend == 1 &&
+                        rsi.Last().Rsi > 45 &&
+                        (double?)state.GetCurrentCandle().Close <= bollingerB.Last().LowerBand)
+                {
+                    state.Trade.Spot.Sell(AmountType.Percentage, 100);
+                }
             })
             .OnLogEntry(
                 (logEntry, state) =>
@@ -61,19 +74,39 @@ public class BackTest(ICoinbaseClient publicClient) : IBackTest
         return await _publicClient.GetHistoricPrices("BTC-USD");
     }
 
-    private int calculateTrend(List<BacktestCandle> backtestCandles, List<VwapResult> vwaps)
+    private static int CalculateTrend(List<BacktestCandle> backtestCandles, List<VwapResult> vwaps)
     {
 
-       int backCandles = 15;
-        for (int i = 0; i < backtestCandles.Count(); i++)
+        int backCandles = 15;
+        for (int i = 0; i < backtestCandles.Count; i++)
         {
-           int upt = 1;
-           int dnt = 1;
-           for (int j = i-backCandles; j < i+1; j++)
-           {
-
-           }
+            int upt = 1;
+            int dnt = 1;
+            for (int j = i - backCandles; j < i + 1; j++)
+            {
+                if (Math.Max(backtestCandles[j].Open, backtestCandles[j].Close) >= ((decimal?)vwaps[j].Vwap))
+                {
+                    dnt = 0;
+                }
+                if (Math.Max(backtestCandles[j].Open, backtestCandles[j].Close) <= ((decimal?)vwaps[j].Vwap))
+                {
+                    upt = 0;
+                }
+                if (upt == 1 && dnt == 1)
+                {
+                    return 3;
+                }
+                else if (upt == 1)
+                {
+                    return 2;
+                }
+                else if (dnt == 1)
+                {
+                    return 1;
+                }
+            }
         }
+        return 0;
     }
 
 
