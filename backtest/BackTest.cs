@@ -39,9 +39,7 @@ public class BackTest(ICoinbaseClient publicClient) : IBackTest
                 IEnumerable<RsiResult> rsi = quotes.GetRsi(16);
 
                 int trend = CalculateTrend(backTestCandleList, vWap);
-                if (trend == 2 &&
-                        rsi.Last().Rsi < 45 &&
-                        (double?)state.GetCurrentCandle().Close >= bollingerB.Last().LowerBand)
+                if (trend == 2 && rsi.Last().Rsi < 45 && (double?)state.GetCurrentCandle().Close >= bollingerB.Last().LowerBand)
                 {
                     state.Trade.Spot.Buy(AmountType.Percentage, 25);
                 }

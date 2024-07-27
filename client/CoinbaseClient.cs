@@ -44,25 +44,36 @@ namespace coinbase_bot.client
             return JsonConvert.DeserializeObject<HistoricalCandles>(json);
         }
 
-        public Task<HistoricalCandles> GetHistoricPricesInBatch(string pricePair, int periods)
+        public async Task<List<Candle>> GetHistoricPricesInBatch(string pricePair, int periods)
         {
+            List<Candle> candles = [];
 
-            for (int i = periods; i > 0; i++)
+            if (periods == 0)
             {
-                long start = periods * 20;
-                long end = periods * 20 - 20;
+                long longStart = new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds();
+                long longEnd = new DateTimeOffset(DateTime.Now).AddHours(-20).ToUnixTimeSeconds();
 
-                if (periods == 0)
+                string json = await CallCoinbase(
+                    $"api/v3/brokerage/market/products/{pricePair}/candles?start={longStart}&end={longEnd}&granularity=FIVE_MINUTE"
+                );
+
+                HistoricalCandles ret = JsonConvert.DeserializeObject<HistoricalCandles>(json);
+                candles.AddRange(ret.candles);
+            }
+            else
+            {
+                for (int i = periods + 1; i > 1; i++)
                 {
+                    //Current date in Unix seconds
+                    long longEnd = new DateTimeOffset().AddDays(-(i * 20)).ToUnixTimeSeconds();
+                    long longStart = new DateTimeOffset().AddDays(-((i * 20) - 20)).ToUnixTimeSeconds();
+                    string json = await CallCoinbase($"api/v3/brokerage/market/products/{pricePair}/candles?start={longStart}&end={longEnd}&granularity=FIVE_MINUTE");
+                    HistoricalCandles ret = JsonConvert.DeserializeObject<HistoricalCandles>(json);
+                    candles.AddRange(ret.candles);
 
                 }
-
-                //Current date in Unix seconds
-                long longEnd = new DateTimeOffset(end).ToUnixTimeSeconds();
-                long longStart = new DateTimeOffset(start).ToUnixTimeSeconds();
             }
-
-
+            return candles;
         }
     }
 }
