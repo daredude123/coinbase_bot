@@ -75,6 +75,11 @@ public class BackTest(ICoinbaseClient publicClient) : IBackTest
     private static int CalculateTrend(List<BacktestCandle> backtestCandles, List<VwapResult> vwaps)
     {
 
+        if (backtestCandles.Count() < 20)
+        {
+            return -1;
+
+        }
         int backCandles = 15;
         for (int i = 0; i < backtestCandles.Count; i++)
         {
@@ -112,7 +117,7 @@ public class BackTest(ICoinbaseClient publicClient) : IBackTest
     private static List<BacktestCandle> Candle2BackTestData(HistoricalCandles historicalCandles)
     {
         List<BacktestCandle> qList = [];
-        historicalCandles.candles.Reverse();
+        /*historicalCandles.candles.Reverse();*/
         foreach (Candle price in historicalCandles.candles)
         {
             BacktestCandle ret = ToBackTestCandles(price);

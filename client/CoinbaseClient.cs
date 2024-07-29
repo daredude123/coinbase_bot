@@ -66,20 +66,25 @@ namespace coinbase_bot.client
             }
             else
             {
-                for (int i = periods; i > 0; i++)
+                for (int i = periods; i > 0; i--)
                 {
                     int offsetStart = -(i * 20);
                     int offsetEnd = offsetStart + 20;
 
-                    Console.WriteLine("offsetStart = "+ offsetStart);
-                    Console.WriteLine("offsetEnd = "+ offsetEnd);
+                    Console.WriteLine("offsetStart = " + offsetStart);
+                    Console.WriteLine("offsetEnd = " + offsetEnd);
+                    //
                     //Current date in Unix seconds
-                    long longEnd = new DateTimeOffset(DateTime.Now).AddHours(offsetEnd).ToUnixTimeSeconds();
                     long longStart = new DateTimeOffset(DateTime.Now).AddHours(offsetStart).ToUnixTimeSeconds();
+                    long longEnd = new DateTimeOffset(DateTime.Now).AddHours(offsetEnd).ToUnixTimeSeconds();
+
                     string json = await CallCoinbase($"api/v3/brokerage/market/products/{pricePair}/candles?start={longStart}&end={longEnd}&granularity=FIVE_MINUTE");
-                    Console.WriteLine(json);
                     HistoricalCandles ret = JsonConvert.DeserializeObject<HistoricalCandles>(json);
-                    Console.WriteLine(ret.candles);
+
+                    ret.candles.Reverse();
+                    Console.WriteLine("first " +  ret.candles.First().Start);
+                    Console.WriteLine("last " + ret.candles.Last().Start);
+
                     candles.candles.AddRange(ret.candles);
                 }
             }
