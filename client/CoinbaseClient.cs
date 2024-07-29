@@ -44,9 +44,13 @@ namespace coinbase_bot.client
             return JsonConvert.DeserializeObject<HistoricalCandles>(json);
         }
 
-        public async Task<List<Candle>> GetHistoricPricesInBatch(string pricePair, int periods)
+        public async Task<HistoricalCandles> GetHistoricPricesInBatch(string pricePair, int periods)
         {
-            List<Candle> candles = [];
+
+            HistoricalCandles candles = new()
+            {
+                candles = []
+            };
 
             if (periods == 0)
             {
@@ -58,19 +62,25 @@ namespace coinbase_bot.client
                 );
 
                 HistoricalCandles ret = JsonConvert.DeserializeObject<HistoricalCandles>(json);
-                candles.AddRange(ret.candles);
+                candles.candles.AddRange(ret.candles);
             }
             else
             {
-                for (int i = periods + 1; i > 1; i++)
+                for (int i = periods; i > 0; i++)
                 {
-                    //Current date in Unix seconds
-                    long longEnd = new DateTimeOffset().AddDays(-(i * 20)).ToUnixTimeSeconds();
-                    long longStart = new DateTimeOffset().AddDays(-((i * 20) - 20)).ToUnixTimeSeconds();
-                    string json = await CallCoinbase($"api/v3/brokerage/market/products/{pricePair}/candles?start={longStart}&end={longEnd}&granularity=FIVE_MINUTE");
-                    HistoricalCandles ret = JsonConvert.DeserializeObject<HistoricalCandles>(json);
-                    candles.AddRange(ret.candles);
+                    int offsetStart = -(i * 20);
+                    int offsetEnd = offsetStart + 20;
 
+                    Console.WriteLine("offsetStart = "+ offsetStart);
+                    Console.WriteLine("offsetEnd = "+ offsetEnd);
+                    //Current date in Unix seconds
+                    long longEnd = new DateTimeOffset(DateTime.Now).AddHours(offsetEnd).ToUnixTimeSeconds();
+                    long longStart = new DateTimeOffset(DateTime.Now).AddHours(offsetStart).ToUnixTimeSeconds();
+                    string json = await CallCoinbase($"api/v3/brokerage/market/products/{pricePair}/candles?start={longStart}&end={longEnd}&granularity=FIVE_MINUTE");
+                    Console.WriteLine(json);
+                    HistoricalCandles ret = JsonConvert.DeserializeObject<HistoricalCandles>(json);
+                    Console.WriteLine(ret.candles);
+                    candles.candles.AddRange(ret.candles);
                 }
             }
             return candles;

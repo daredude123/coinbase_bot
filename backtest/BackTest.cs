@@ -69,7 +69,7 @@ public class BackTest(ICoinbaseClient publicClient) : IBackTest
     private async Task<HistoricalCandles> GetCandleData()
     {
 
-        return await _publicClient.GetHistoricPrices("BTC-USD");
+        return await _publicClient.GetHistoricPricesInBatch("BTC-USD", 4);
     }
 
     private static int CalculateTrend(List<BacktestCandle> backtestCandles, List<VwapResult> vwaps)
