@@ -16,39 +16,59 @@ public class BackTest(ICoinbaseClient publicClient) : IBackTest
         HistoricalCandles candleData = await GetCandleData();
 
         List<Quote> strategyData = Candle2Quote(candleData);
-        Console.WriteLine(strategyData.Count);
         List<Quote> quotes = [];
 
         bool position = false;
         decimal feePercentage = 0.6m;
         List<BacktestCandle> backTestCandleList = [];
 
+        bool buystate = true;
         BacktestBuilder builder = BacktestBuilder
             .CreateBuilder(Candle2BackTestData(candleData))
             .AddSpotFee(AmountType.Percentage, feePercentage, FeeSource.Base)
+            .WithQuoteBudget(1000)
+
             .OnTick(state =>
             {
                 backTestCandleList.Add(state.GetCurrentCandle());
 
                 Quote quote = BackTestCandle2Quote(state.GetCurrentCandle());
                 quotes.Add(quote);
-                Console.WriteLine($"'{state.GetCurrentCandle().High}' '{state.GetCurrentCandle().Low}' '{state.GetCurrentCandle().Open}' '{state.GetCurrentCandle().Time}' '{state.GetCurrentCandle().Volume}' '{state.GetCurrentCandle().Close}'");
 
-                IEnumerable<BollingerBandsResult> bollingerB = quotes.GetBollingerBands(15);
-                List<VwapResult> vWap = quotes.GetVwap().ToList();
-                IEnumerable<RsiResult> rsi = quotes.GetRsi(16);
+                var EMA_slow = quotes.GetEma(50).ToList();
+                var EMA_fast = quotes.GetEma(30).ToList();
+                var rsi = quotes.GetRsi(10);
+                var bba_Bands = quotes.GetBollingerBands(15, 1.5);
+                var atr = quotes.GetAtr(7);
 
-                int trend = CalculateTrend(backTestCandleList, vWap);
-                if (trend == 2 && rsi.Last().Rsi < 45 && (double?)state.GetCurrentCandle().Close >= bollingerB.Last().LowerBand)
+                int emaFastStartIndex = Math.Max(0, (EMA_fast.Count - 1) - 7);
+                int emaFastEndIndex = Math.Min(EMA_fast.Count, 7);
+
+                int emaSlowStartIndex = Math.Max(0, (EMA_slow.Count - 1) - 7);
+                int emaSlowEndIndex = Math.Min(EMA_slow.Count, 7);
+
+                int emaSignal = 0;
+                if (CheckEmaTrend(EMA_fast.Slice(emaFastStartIndex, emaFastEndIndex), EMA_slow.Slice(emaSlowStartIndex, emaSlowEndIndex)))
                 {
-                    state.Trade.Spot.Buy(AmountType.Percentage, 25);
+                    emaSignal = 1;
                 }
-                if (trend == 1 &&
-                        rsi.Last().Rsi > 45 &&
-                        (double?)state.GetCurrentCandle().Close <= bollingerB.Last().LowerBand)
+                else if (CheckEmaTrend(EMA_slow.Slice(emaSlowStartIndex, emaSlowEndIndex), EMA_fast.Slice(emaFastStartIndex, emaFastEndIndex)))
                 {
-                    state.Trade.Spot.Sell(AmountType.Percentage, 100);
+                    emaSignal = 2;
                 }
+
+                if (emaSignal == 2 && state.GetCurrentCandle().Close <= (decimal?)bba_Bands.Last().LowerBand)//&& rsi.Last().Rsi < 60 && buystate)
+                {
+                    state.Trade.Spot.Buy();
+                    buystate = false;
+                }
+                if (emaSignal == 1 && state.GetCurrentCandle().Close >= (decimal?)bba_Bands.Last().UpperBand)//&& rsi.Last().Rsi > 40 && !buystate)
+                {
+                    state.Trade.Spot.Sell();
+                    buystate = true;
+                }
+
+
             })
             .OnLogEntry(
                 (logEntry, state) =>
@@ -69,24 +89,33 @@ public class BackTest(ICoinbaseClient publicClient) : IBackTest
     private async Task<HistoricalCandles> GetCandleData()
     {
 
-        return await _publicClient.GetHistoricPricesInBatch("BTC-USD", 4);
+        return await _publicClient.GetHistoricPricesInBatch("BTC-USD", 10);
+    }
+
+    private static bool CheckEmaTrend(List<EmaResult> firstList, List<EmaResult> lastList)
+    {
+
+        for (int i = 0; i < firstList.Count; i++)
+        {
+            if (firstList[i].Ema < lastList[i].Ema)
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static int CalculateTrend(List<BacktestCandle> backtestCandles, List<VwapResult> vwaps)
     {
 
-        if (backtestCandles.Count() < 20)
-        {
-            return -1;
-
-        }
         int backCandles = 15;
-        for (int i = 0; i < backtestCandles.Count; i++)
+        for (int i = backCandles; i < backtestCandles.Count; i++)
         {
             int upt = 1;
             int dnt = 1;
             for (int j = i - backCandles; j < i + 1; j++)
             {
+
                 if (Math.Max(backtestCandles[j].Open, backtestCandles[j].Close) >= ((decimal?)vwaps[j].Vwap))
                 {
                     dnt = 0;
