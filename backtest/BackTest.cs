@@ -18,72 +18,77 @@ public class BackTest(ICoinbaseClient publicClient) : IBackTest
         List<Quote> strategyData = Candle2Quote(candleData);
         List<Quote> quotes = [];
 
-        bool position = false;
         decimal feePercentage = 0.6m;
         List<BacktestCandle> backTestCandleList = [];
 
-        bool buystate = true;
-        BacktestBuilder builder = BacktestBuilder
-            .CreateBuilder(Candle2BackTestData(candleData))
-            .AddSpotFee(AmountType.Percentage, feePercentage, FeeSource.Base)
-            .WithQuoteBudget(1000)
+        for (int i = 1; i < 5; i++)
+        {
+            bool buystate = true;
+            BacktestBuilder builder = BacktestBuilder
+                .CreateBuilder(Candle2BackTestData(candleData))
+                .AddSpotFee(AmountType.Percentage, feePercentage, FeeSource.Base)
+                .WithQuoteBudget(1000)
 
-            .OnTick(state =>
-            {
-                backTestCandleList.Add(state.GetCurrentCandle());
-
-                Quote quote = BackTestCandle2Quote(state.GetCurrentCandle());
-                quotes.Add(quote);
-
-                var EMA_slow = quotes.GetEma(50).ToList();
-                var EMA_fast = quotes.GetEma(30).ToList();
-                var rsi = quotes.GetRsi(10);
-                var bba_Bands = quotes.GetBollingerBands(15, 1.5);
-                var atr = quotes.GetAtr(7);
-
-                int emaFastStartIndex = Math.Max(0, (EMA_fast.Count - 1) - 7);
-                int emaFastEndIndex = Math.Min(EMA_fast.Count, 7);
-
-                int emaSlowStartIndex = Math.Max(0, (EMA_slow.Count - 1) - 7);
-                int emaSlowEndIndex = Math.Min(EMA_slow.Count, 7);
-
-                int emaSignal = 0;
-                if (CheckEmaTrend(EMA_fast.Slice(emaFastStartIndex, emaFastEndIndex), EMA_slow.Slice(emaSlowStartIndex, emaSlowEndIndex)))
+                .OnTick(state =>
                 {
-                    emaSignal = 1;
-                }
-                else if (CheckEmaTrend(EMA_slow.Slice(emaSlowStartIndex, emaSlowEndIndex), EMA_fast.Slice(emaFastStartIndex, emaFastEndIndex)))
-                {
-                    emaSignal = 2;
-                }
+                    backTestCandleList.Add(state.GetCurrentCandle());
 
-                if (emaSignal == 2 && state.GetCurrentCandle().Close <= (decimal?)bba_Bands.Last().LowerBand)//&& rsi.Last().Rsi < 60 && buystate)
-                {
-                    state.Trade.Spot.Buy();
-                    buystate = false;
-                }
-                if (emaSignal == 1 && state.GetCurrentCandle().Close >= (decimal?)bba_Bands.Last().UpperBand)//&& rsi.Last().Rsi > 40 && !buystate)
-                {
-                    state.Trade.Spot.Sell();
-                    buystate = true;
-                }
+                    Quote quote = BackTestCandle2Quote(state.GetCurrentCandle());
+                    quotes.Add(quote);
+
+                    List<EmaResult> EMA_slow = quotes.GetEma(i * 10).ToList();
+                    List<EmaResult> EMA_fast = quotes.GetEma(i * 5).ToList();
+                    IEnumerable<RsiResult> rsi = quotes.GetRsi(i * 2);
+                    IEnumerable<BollingerBandsResult> bba_Bands = quotes.GetBollingerBands(i * 4, 1.5);
+                    IEnumerable<AtrResult> atr = quotes.GetAtr(7);
+
+                    int emaFastStartIndex = Math.Max(0, (EMA_fast.Count - 1) - 7);
+                    int emaFastEndIndex = Math.Min(EMA_fast.Count, 7);
+
+                    int emaSlowStartIndex = Math.Max(0, (EMA_slow.Count - 1) - 7);
+                    int emaSlowEndIndex = Math.Min(EMA_slow.Count, 7);
+
+                    int emaSignal = 0;
+                    if (CheckEmaTrend(EMA_fast.Slice(emaFastStartIndex, emaFastEndIndex), EMA_slow.Slice(emaSlowStartIndex, emaSlowEndIndex)))
+                    {
+                        emaSignal = 1;
+                    }
+                    else if (CheckEmaTrend(EMA_slow.Slice(emaSlowStartIndex, emaSlowEndIndex), EMA_fast.Slice(emaFastStartIndex, emaFastEndIndex)))
+                    {
+                        emaSignal = 2;
 
 
-            })
-            .OnLogEntry(
-                (logEntry, state) =>
-                {
-                    // Optionally do something when a log entry is created
-                }
+                        if (emaSignal == 2 && state.GetCurrentCandle().Close <= (decimal?)bba_Bands.Last().LowerBand && buystate)//&& rsi.Last().Rsi < 60 && buystate)
+                        {
+                            state.Trade.Spot.Buy();
+                            buystate = false;
+                        }
+                        if (emaSignal == 1 && state.GetCurrentCandle().Close >= (decimal?)bba_Bands.Last().UpperBand && !buystate)//&& rsi.Last().Rsi > 40 && !buystate)
+                        {
+                            state.Trade.Spot.Sell();
+                            buystate = true;
+                        }
+
+
+                    }
+                })
+
+                .OnLogEntry(
+                    (logEntry, state) =>
+                    {
+                        // Optionally do something when a log entry is created
+                    }
+                );
+            BacktestResult result = await builder.RunAsync();
+            var resultString = JsonConvert.SerializeObject(
+                $"profit ratio {result.ProfitRatio} | total profit in quote : {result.TotalProfitInQuote} |  buy and holdprofitratio {result.BuyAndHoldProfitRatio}" +
+                $" Final Quote budget : {result.FinalQuoteBudget}",
+                /*result,*/
+                Formatting.Indented,
+                [new StringEnumConverter()]
             );
-
-        BacktestResult result = await builder.RunAsync();
-        var resultString = JsonConvert.SerializeObject(
-            result,
-            Formatting.Indented,
-            [new StringEnumConverter()]
-        );
-        Console.WriteLine(resultString);
+            Console.WriteLine(resultString);
+        }
     }
 
     private async Task<HistoricalCandles> GetCandleData()
